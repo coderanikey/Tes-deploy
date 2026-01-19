@@ -11,7 +11,7 @@ permissions:
 env:
   DOCKERHUB_USERNAME: anikri           # Docker Hub username
   IMAGE_NAME: aniket                   # Docker Hub reposry name
-  AZURE_WEBAPP_NAME: ani               # Azure Web App name
+  AZURE_WEBAPP_NAME: qni               # Azure Web App name
 
 jobs:
   build-push-deploy:
