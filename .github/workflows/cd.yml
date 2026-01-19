@@ -5,12 +5,9 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-
 env:
   DOCKERHUB_USERNAME: anikri           # Docker Hub username
-  IMAGE_NAME: aniket                   # Docker Hub reposry name
+  IMAGE_NAME: aniket                   # Docker Hub repository name
   AZURE_WEBAPP_NAME: qni               # Azure Web App name
 
 jobs:
@@ -18,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout co
-      - name: Checkout repository
+      # 1️⃣ Checkout the repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       # 2️⃣ Get short commit SHA
@@ -32,8 +29,8 @@ jobs:
         with:
           node-version: 20
 
-      # 4️⃣ Install dependencies & build React app
-      - name: Install and Build React
+      # 4️⃣ Install dependencies and build React app
+      - name: Install & Build React App
         run: |
           npm install
           npm run build
@@ -45,7 +42,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 6️⃣ Build Docker image with tags
+      # 6️⃣ Build Docker image with tags: latest + commit SHA
       - name: Build Docker Image
         run: |
           docker build \
@@ -58,7 +55,7 @@ jobs:
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:latest
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:${{ env.COMMIT_SHA }}
 
-      # 8️⃣ Deploy Docker image to Azure Web App
+      # 8️⃣ Deploy Docker image to Azure Web App using publish profile
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
