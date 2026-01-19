@@ -9,52 +9,59 @@ permissions:
   contents: read
 
 env:
-  DOCKERHUB_USERNAME: anikri
-  IMAGE_NAME: aniket
-  AZURE_WEBAPP_NAME: your-app-service-name
+  DOCKERHUB_USERNAME: anikri          # Docker Hub username
+  IMAGE_NAME: aniket                  # Docker Hub repository name
+  AZURE_WEBAPP_NAME: your-app-service-name  # Azure Web App name
 
 jobs:
   build-push-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Get short commit SHA
       - name: Get Commit SHA
         run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - name: Setup Node
+      # 3️⃣ Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Install & Build React
+      # 4️⃣ Install dependencies & build React app
+      - name: Install and Build React
         run: |
           npm install
           npm run build
 
+      # 5️⃣ Login to Docker Hub
       - name: Docker Hub Login
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # 6️⃣ Build Docker image with tags
       - name: Build Docker Image
         run: |
           docker build \
             -t $DOCKERHUB_USERNAME/$IMAGE_NAME:latest \
             -t $DOCKERHUB_USERNAME/$IMAGE_NAME:${{ env.COMMIT_SHA }} .
 
+      # 7️⃣ Push Docker images to Docker Hub
       - name: Push Docker Image
         run: |
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:latest
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:${{ env.COMMIT_SHA }}
 
-      # ✅ Azure deploy (NO service principal needed)
+      # 8️⃣ Deploy to Azure Web App using Publish Profile
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          images: ${{ env.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest
