@@ -9,56 +9,53 @@ permissions:
   contents: read
 
 env:
-  DOCKERHUB_USERNAME: anikri          # Docker Hub username
-  IMAGE_NAME: aniket                  # Docker Hub repository name
-  AZURE_WEBAPP_NAME: your-app-service-name  # Azure Web App name
+  DOCKERHUB_USERNAME: anikri
+  IMAGE_NAME: aniket
+  AZURE_WEBAPP_NAME: ani
 
 jobs:
   build-push-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      # 1️⃣ Checkout code
+      - uses: actions/checkout@v3
 
-      # 2️⃣ Get short commit SHA
+      # 2️⃣ Get commit SHA
       - name: Get Commit SHA
         run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       # 3️⃣ Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      # 4️⃣ Install dependencies & build React app
+      # 4️⃣ Install dependencies & build React
       - name: Install and Build React
         run: |
           npm install
           npm run build
 
       # 5️⃣ Login to Docker Hub
-      - name: Docker Hub Login
-        uses: docker/login-action@v2
+      - uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 6️⃣ Build Docker image with tags
+      # 6️⃣ Build Docker image
       - name: Build Docker Image
         run: |
           docker build \
             -t $DOCKERHUB_USERNAME/$IMAGE_NAME:latest \
             -t $DOCKERHUB_USERNAME/$IMAGE_NAME:${{ env.COMMIT_SHA }} .
 
-      # 7️⃣ Push Docker images to Docker Hub
+      # 7️⃣ Push Docker image
       - name: Push Docker Image
         run: |
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:latest
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:${{ env.COMMIT_SHA }}
 
-      # 8️⃣ Deploy to Azure Web App using Publish Profile
+      # 8️⃣ Deploy to Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
