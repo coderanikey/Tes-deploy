@@ -55,7 +55,7 @@ jobs:
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:latest
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:${{ env.COMMIT_SHA }}
 
-      # 8️⃣ Deploy to Azure Web App
+      # 8️⃣ Deploy Docker image to Azure
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
