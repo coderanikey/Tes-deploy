@@ -9,9 +9,10 @@ permissions:
   contents: read
 
 env:
-  DOCKERHUB_USERNAME: anikri          # Docker Hub username
-  IMAGE_NAME: aniket                  # Docker Hub repository name
-  AZURE_WEBAPP_NAME: qni              # Azure Web App name
+  DOCKERHUB_USERNAME: anikri
+  IMAGE_NAME: aniket
+  AZURE_WEBAPP_NAME: qni
+  AZURE_RESOURCE_GROUP: <YOUR_RESOURCE_GROUP>
 
 jobs:
   build-push-deploy:
@@ -45,7 +46,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 6️⃣ Build Docker image with tags
+      # 6️⃣ Build Docker image (latest + commit SHA)
       - name: Build Docker Image
         run: |
           docker build \
@@ -58,10 +59,28 @@ jobs:
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:latest
           docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:${{ env.COMMIT_SHA }}
 
-      # 8️⃣ Deploy to Azure Web App using Publish Profile
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+      # 8️⃣ Azure Login (required for az cli)
+      - name: Azure Login
+        uses: azure/login@v1
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: DOCKER|docker.io/${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # 9️⃣ Configure Azure Web App to use Docker image (CRITICAL)
+      - name: Configure Azure Web App Container
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az webapp config container set \
+              --name $AZURE_WEBAPP_NAME \
+              --resource-group $AZURE_RESOURCE_GROUP \
+              --docker-custom-image-name docker.io/$DOCKERHUB_USERNAME/$IMAGE_NAME:latest \
+              --docker-registry-server-url https://index.docker.io
+
+      # 🔟 Restart Web App so it pulls latest image
+      - name: Restart Azure Web App
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az webapp restart \
+              --name $AZURE_WEBAPP_NAME \
+              --resource-group $AZURE_RESOURCE_GROUP
